@@ -9,10 +9,17 @@
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:aud": [
+            "sts.amazonaws.com",
+            "https://github.com/subasangeeth"
+          ]
         },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:subasangeeth/employee-document-vault:*"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:subasangeeth/employee-document-vault:*",
+            "repo:Subasangeeth/employee-document-vault:*",
+            "repo:*:employee-document-vault:*"
+          ]
         }
       }
     }
