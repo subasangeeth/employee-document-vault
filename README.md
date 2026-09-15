@@ -1,6 +1,6 @@
 # Employee Document Vault with Role-Based Access Control on AWS
 
-[![CI/CD Pipeline](https://github.com/org/employee-document-vault/actions/workflows/deploy.yml/badge.svg)](https://github.com/org/employee-document-vault/actions)
+[![CI/CD Pipeline](https://github.com/subasangeeth/employee-document-vault/actions/workflows/deploy.yml/badge.svg)](https://github.com/subasangeeth/employee-document-vault/actions)
 [![AWS Architecture](https://img.shields.io/badge/AWS-Serverless-orange.svg)](https://aws.amazon.com)
 [![Security](https://img.shields.io/badge/Security-Zero--Trust%20RBAC-green.svg)](security/iam-audit.md)
 [![Encryption](https://img.shields.io/badge/Encryption-SSE--KMS%20%7C%20TLS%201.3-blue.svg)](security/iam-audit.md)
