@@ -1,0 +1,180 @@
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/ApiGateway", "Count", "ApiId", "gk6sav3uah", "Stage", "prod", { "stat": "Sum", "label": "API Total Calls", "color": "#1f77b4" } ],
+          [ ".", "4XXError", ".", ".", ".", ".", { "stat": "Sum", "label": "4XX Client Errors", "color": "#ff7f0e" } ],
+          [ ".", "5XXError", ".", ".", ".", ".", { "stat": "Sum", "label": "5XX Server Errors", "color": "#d62728" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "API Gateway Traffic & Error Counts (prod)",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 0,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/ApiGateway", "Latency", "ApiId", "gk6sav3uah", "Stage", "prod", { "stat": "p50", "label": "P50 Overall Latency", "color": "#2ca02c" } ],
+          [ "...", { "stat": "p95", "label": "P95 Overall Latency", "color": "#ff7f0e" } ],
+          [ "AWS/ApiGateway", "IntegrationLatency", "ApiId", "gk6sav3uah", "Stage", "prod", { "stat": "p95", "label": "P95 Integration Latency", "color": "#9467bd" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "API Gateway End-to-End Latency Profile (ms)",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/Lambda", "Invocations", "FunctionName", "EmployeeVaultUpload", { "stat": "Sum", "label": "Upload Invocations" } ],
+          [ "...", "EmployeeVaultDownload", { "stat": "Sum", "label": "Download Invocations" } ],
+          [ "...", "EmployeeVaultList", { "stat": "Sum", "label": "List Invocations" } ],
+          [ "...", "EmployeeVaultDelete", { "stat": "Sum", "label": "Delete Invocations" } ],
+          [ "...", "EmployeeVaultVersion", { "stat": "Sum", "label": "Version Invocations" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": true,
+        "region": "us-east-2",
+        "title": "Lambda Invocations by Function",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 6,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/Lambda", "Errors", "FunctionName", "EmployeeVaultUpload", { "stat": "Sum", "label": "Upload Errors", "color": "#d62728" } ],
+          [ "...", "EmployeeVaultDownload", { "stat": "Sum", "label": "Download Errors", "color": "#e377c2" } ],
+          [ "...", "EmployeeVaultList", { "stat": "Sum", "label": "List Errors", "color": "#bcbd22" } ],
+          [ "...", "EmployeeVaultDelete", { "stat": "Sum", "label": "Delete Errors", "color": "#17becf" } ],
+          [ "...", "EmployeeVaultVersion", { "stat": "Sum", "label": "Version Errors", "color": "#8c564b" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "Lambda Errors by Microservice",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 12,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/Lambda", "Duration", "FunctionName", "EmployeeVaultUpload", { "stat": "p95", "label": "Upload P95" } ],
+          [ "...", "EmployeeVaultDownload", { "stat": "p95", "label": "Download P95" } ],
+          [ "...", "EmployeeVaultList", { "stat": "p95", "label": "List P95" } ],
+          [ "...", "EmployeeVaultDelete", { "stat": "p95", "label": "Delete P95" } ],
+          [ "...", "EmployeeVaultVersion", { "stat": "p95", "label": "Version P95" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "Lambda P95 Duration by Function (ms)",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 12,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/Lambda", "Throttles", "FunctionName", "EmployeeVaultUpload", { "stat": "Sum" } ],
+          [ "...", "EmployeeVaultDownload", { "stat": "Sum" } ],
+          [ "...", "EmployeeVaultList", { "stat": "Sum" } ],
+          [ "...", "EmployeeVaultDelete", { "stat": "Sum" } ],
+          [ "...", "EmployeeVaultVersion", { "stat": "Sum" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "Lambda Concurrency Throttles",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 18,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/DynamoDB", "ConsumedReadCapacityUnits", "TableName", "document_metadata", { "stat": "Sum", "label": "doc_metadata Read" } ],
+          [ ".", "ConsumedWriteCapacityUnits", ".", ".", { "stat": "Sum", "label": "doc_metadata Write" } ],
+          [ ".", "ConsumedReadCapacityUnits", ".", "audit_log", { "stat": "Sum", "label": "audit_log Read" } ],
+          [ ".", "ConsumedWriteCapacityUnits", ".", "audit_log", { "stat": "Sum", "label": "audit_log Write" } ],
+          [ ".", "ConsumedReadCapacityUnits", ".", "employee_directory", { "stat": "Sum", "label": "directory Read" } ],
+          [ ".", "ConsumedWriteCapacityUnits", ".", "employee_directory", { "stat": "Sum", "label": "directory Write" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "DynamoDB Capacity Consumption (Pay-Per-Request)",
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 18,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "metrics": [
+          [ "AWS/S3", "AllRequests", "BucketName", "employee-document-vault-210452150784-us-east-2", "FilterId", "EntireBucket", { "stat": "Sum", "label": "All Requests" } ],
+          [ ".", "4xxErrors", ".", ".", ".", ".", { "stat": "Sum", "label": "4xx Errors" } ],
+          [ ".", "5xxErrors", ".", ".", ".", ".", { "stat": "Sum", "label": "5xx Errors" } ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "region": "us-east-2",
+        "title": "S3 Vault Bucket Requests & Errors",
+        "period": 300
+      }
+    },
+    {
+      "type": "log",
+      "x": 0,
+      "y": 24,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "query": "SOURCE '/aws/lambda/EmployeeVaultUpload'\n| SOURCE '/aws/lambda/EmployeeVaultDownload'\n| SOURCE '/aws/lambda/EmployeeVaultList'\n| SOURCE '/aws/lambda/EmployeeVaultDelete'\n| SOURCE '/aws/lambda/EmployeeVaultVersion'\n| fields @timestamp, employeeId, role, operation, resource, status, error_type, sourceIp\n| filter status = 'DENIED' or ispresent(error_type)\n| sort @timestamp desc\n| limit 50",
+        "region": "us-east-2",
+        "title": "Live Security & Access Denied Stream (CloudWatch Insights)",
+        "view": "table"
+      }
+    }
+  ]
+}

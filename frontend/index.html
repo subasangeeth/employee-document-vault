@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Document Vault | Secure HR Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/30">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          Employee Document Vault
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+            <i class="fa-solid fa-shield-halved mr-1"></i> RBAC Enforced
+          </span>
+        </h1>
+        <p class="text-xs text-slate-400">AWS S3 · SSE-KMS · DynamoDB · Cognito · Lambda Zero-Trust</p>
+      </div>
+    </div>
+
+    <!-- Auth User Info / Login Controls -->
+    <div id="authHeaderControls" class="flex items-center space-x-4">
+      <!-- Will be populated dynamically by app.js -->
+    </div>
+  </header>
+
+  <!-- Login Overlay Modal (Shown when not authenticated) -->
+  <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-8 shadow-2xl">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-2xl mb-3 border border-indigo-500/30">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-white">Sign In to Vault</h2>
+        <p class="text-sm text-slate-400 mt-1">Authenticate via Amazon Cognito User Pool</p>
+      </div>
+
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Username / Employee ID</label>
+          <input type="text" id="loginUsername" required placeholder="e.g. EMP001, MGR001, HR001"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Password</label>
+          <input type="password" id="loginPassword" required placeholder="••••••••"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        </div>
+        
+        <div id="loginError" class="hidden text-xs text-rose-400 bg-rose-950/50 border border-rose-800/60 p-3 rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <span id="loginErrorText">Authentication failed</span>
+        </div>
+
+        <button type="submit" id="loginBtn"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In
+        </button>
+      </form>
+
+      <!-- Quick Fill Demo Profiles -->
+      <div class="mt-6 pt-6 border-t border-slate-700">
+        <p class="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">Quick Fill Demo Roles:</p>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" onclick="quickLogin('EMP001')"
+            class="px-2.5 py-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-medium text-slate-200 text-center transition">
+            <div class="font-semibold text-sky-400">EMP001</div>
+            <div class="text-[10px] text-slate-400">Employee</div>
+          </button>
+          <button type="button" onclick="quickLogin('MGR001')"
+            class="px-2.5 py-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-medium text-slate-200 text-center transition">
+            <div class="font-semibold text-amber-400">MGR001</div>
+            <div class="text-[10px] text-slate-400">Manager</div>
+          </button>
+          <button type="button" onclick="quickLogin('HR001')"
+            class="px-2.5 py-2 bg-slate-700/60 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-medium text-slate-200 text-center transition">
+            <div class="font-semibold text-emerald-400">HR001</div>
+            <div class="text-[10px] text-slate-400">HR Admin</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Body -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Sidebar: Folder Categories -->
+    <aside class="w-64 bg-slate-800/80 border-r border-slate-700 flex flex-col p-4 space-y-6">
+      <div>
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 px-3">
+          Document Types
+        </div>
+        <nav class="space-y-1" id="categoryNav">
+          <button onclick="setCategory('all')" class="category-btn active w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left" data-cat="all">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-folder-open text-indigo-400"></i> All Documents</span>
+            <span id="badge-all" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+          <button onclick="setCategory('offer-letter')" class="category-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left text-slate-300 hover:bg-slate-700/50" data-cat="offer-letter">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-file-signature text-blue-400"></i> Offer Letters</span>
+            <span id="badge-offer-letter" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+          <button onclick="setCategory('contract')" class="category-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left text-slate-300 hover:bg-slate-700/50" data-cat="contract">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-file-contract text-emerald-400"></i> Contracts</span>
+            <span id="badge-contract" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+          <button onclick="setCategory('payslip')" class="category-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left text-slate-300 hover:bg-slate-700/50" data-cat="payslip">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-receipt text-amber-400"></i> Payslips</span>
+            <span id="badge-payslip" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+          <button onclick="setCategory('appraisal')" class="category-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left text-slate-300 hover:bg-slate-700/50" data-cat="appraisal">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-chart-line text-purple-400"></i> Appraisals</span>
+            <span id="badge-appraisal" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+          <button onclick="setCategory('compliance')" class="category-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition text-left text-slate-300 hover:bg-slate-700/50" data-cat="compliance">
+            <span class="flex items-center gap-3"><i class="fa-solid fa-certificate text-teal-400"></i> Compliance</span>
+            <span id="badge-compliance" class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-300">0</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Storage Info Badge -->
+      <div class="mt-auto bg-slate-900/70 border border-slate-700/60 rounded-xl p-3.5 text-xs text-slate-400 space-y-2">
+        <div class="flex items-center gap-2 font-semibold text-slate-300">
+          <i class="fa-brands fa-aws text-amber-400"></i> Cloud Architecture
+        </div>
+        <div class="text-[11px] leading-relaxed">
+          • S3 Versioning: <span class="text-emerald-400 font-mono font-semibold">Enabled</span><br>
+          • Encryption: <span class="text-indigo-400 font-semibold">SSE-KMS</span><br>
+          • 90-day Transition: <span class="text-amber-400 font-semibold">S3-IA</span><br>
+          • Audit Trail: <span class="text-sky-400 font-semibold">DynamoDB Immutable</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-y-auto bg-slate-900 p-6 space-y-6">
+      
+      <!-- Top Action Bar -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+        
+        <!-- Search & Filter Controls -->
+        <div class="flex flex-wrap items-center gap-3 flex-1 min-w-[300px]">
+          <!-- Search Bar -->
+          <div class="relative flex-1 min-w-[200px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+            <input type="text" id="searchInput" oninput="applyFilters()" placeholder="Search documents, tags, employee..."
+              class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 transition">
+          </div>
+
+          <!-- Team / Target Employee Selector (For Managers & HR Admin) -->
+          <div id="targetEmployeeFilterContainer" class="hidden">
+            <select id="employeeFilter" onchange="loadDocuments()"
+              class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="">All Authorized Employees</option>
+            </select>
+          </div>
+
+          <!-- Sort Selector -->
+          <select id="sortBy" onchange="applyFilters()"
+            class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="filename">Filename (A-Z)</option>
+            <option value="type">Document Type</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-3">
+          <button onclick="loadDocuments()" title="Refresh file list"
+            class="p-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button onclick="openUploadModal()"
+            class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 text-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Document
+          </button>
+        </div>
+      </div>
+
+      <!-- Alerts & Notification Banner -->
+      <div id="alertBanner" class="hidden p-4 rounded-xl border flex items-center justify-between text-sm transition">
+        <div class="flex items-center gap-3" id="alertBannerText"></div>
+        <button onclick="hideAlert()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <!-- Documents Table View -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-900/60 border-b border-slate-700 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <th class="py-3.5 px-4">Document</th>
+                <th class="py-3.5 px-4">Type</th>
+                <th class="py-3.5 px-4">Employee</th>
+                <th class="py-3.5 px-4">Uploaded By</th>
+                <th class="py-3.5 px-4">Upload Date</th>
+                <th class="py-3.5 px-4">Tags</th>
+                <th class="py-3.5 px-4 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="documentsTableBody" class="divide-y divide-slate-700/60">
+              <!-- Dynamically populated rows -->
+              <tr>
+                <td colspan="7" class="py-12 text-center text-slate-400">
+                  <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-indigo-400"></i>
+                  <p>Loading documents...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden py-16 text-center text-slate-400">
+          <div class="w-16 h-16 rounded-full bg-slate-700/40 text-slate-500 mx-auto flex items-center justify-center text-2xl mb-3">
+            <i class="fa-regular fa-folder-open"></i>
+          </div>
+          <h3 class="text-base font-semibold text-slate-300">No documents found</h3>
+          <p class="text-xs text-slate-500 mt-1">Try changing filters or upload a new file.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-cloud-arrow-up text-indigo-400"></i> Upload New Document
+        </h3>
+        <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="uploadForm" class="space-y-4">
+        <!-- Target Employee ID -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Target Employee ID</label>
+          <input type="text" id="uploadEmployeeId" required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+          <p class="text-[11px] text-slate-500 mt-1">Standard employees may only upload to their own ID.</p>
+        </div>
+
+        <!-- Document Type -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Document Type</label>
+          <select id="uploadDocType" required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+            <option value="offer-letter">Offer Letter</option>
+            <option value="contract">Employment Contract</option>
+            <option value="payslip">Payslip</option>
+            <option value="appraisal">Appraisal Report</option>
+            <option value="compliance">Compliance Certificate</option>
+          </select>
+        </div>
+
+        <!-- File Picker -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Select File (Max 10MB)</label>
+          <input type="file" id="uploadFileInput" required accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500">
+        </div>
+
+        <!-- Tags -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Tags (Comma-separated)</label>
+          <input type="text" id="uploadTags" placeholder="e.g. 2026, Q3, compensation"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <!-- Upload Status / Progress -->
+        <div id="uploadProgress" class="hidden text-xs p-3 rounded-lg bg-indigo-950/50 border border-indigo-800 text-indigo-300 flex items-center gap-2">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <span id="uploadProgressText">Requesting pre-signed URL...</span>
+        </div>
+
+        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-700">
+          <button type="button" onclick="closeUploadModal()"
+            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition">
+            Cancel
+          </button>
+          <button type="submit" id="submitUploadBtn"
+            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-sm shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+            <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Version History Modal -->
+  <div id="versionModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-700">
+        <div>
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> S3 Version History
+          </h3>
+          <p id="versionModalDocName" class="text-xs text-slate-400 font-mono mt-0.5"></p>
+        </div>
+        <button onclick="closeVersionModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="max-h-80 overflow-y-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="bg-slate-900 border-b border-slate-700 uppercase tracking-wider text-slate-400">
+              <th class="py-2.5 px-3">Version ID</th>
+              <th class="py-2.5 px-3">Modified</th>
+              <th class="py-2.5 px-3">Size</th>
+              <th class="py-2.5 px-3 text-center">Status</th>
+              <th class="py-2.5 px-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="versionTableBody" class="divide-y divide-slate-700">
+            <!-- Versions injected here -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pt-3 border-t border-slate-700 flex justify-between items-center text-xs text-slate-400">
+        <span><i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Preserved via S3 Versioning</span>
+        <button onclick="closeVersionModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Runtime Config & App Script -->
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

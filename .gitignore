@@ -1,0 +1,27 @@
+# Environment & secrets
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Logs & temp test outputs
+*.log
+load-test/artillery-report.json
+load-test/artillery-report.html
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

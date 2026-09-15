@@ -1,0 +1,52 @@
+{
+  "AlarmName": "SecureEmployeeVault-HighErrorRate",
+  "AlarmDescription": "Triggered when API Gateway 5XX error rate exceeds 5% over 5 minutes",
+  "ActionsEnabled": true,
+  "AlarmActions": [
+    "arn:aws:sns:us-east-2:210452150784:secure-employee-vault-alerts"
+  ],
+  "EvaluationPeriods": 1,
+  "Threshold": 5.0,
+  "ComparisonOperator": "GreaterThanThreshold",
+  "TreatMissingData": "notBreaching",
+  "Metrics": [
+    {
+      "Id": "e1",
+      "Expression": "100 * (m2 / FILL(m1, 1))",
+      "Label": "ErrorRatePercentage",
+      "ReturnData": true
+    },
+    {
+      "Id": "m1",
+      "MetricStat": {
+        "Metric": {
+          "Namespace": "AWS/ApiGateway",
+          "MetricName": "Count",
+          "Dimensions": [
+            { "Name": "ApiId", "Value": "gk6sav3uah" },
+            { "Name": "Stage", "Value": "prod" }
+          ]
+        },
+        "Period": 300,
+        "Stat": "Sum"
+      },
+      "ReturnData": false
+    },
+    {
+      "Id": "m2",
+      "MetricStat": {
+        "Metric": {
+          "Namespace": "AWS/ApiGateway",
+          "MetricName": "5XXError",
+          "Dimensions": [
+            { "Name": "ApiId", "Value": "gk6sav3uah" },
+            { "Name": "Stage", "Value": "prod" }
+          ]
+        },
+        "Period": 300,
+        "Stat": "Sum"
+      },
+      "ReturnData": false
+    }
+  ]
+}

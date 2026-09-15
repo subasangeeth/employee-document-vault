@@ -1,0 +1,55 @@
+config:
+  target: "https://gk6sav3uah.execute-api.us-east-2.amazonaws.com/prod"
+  phases:
+    - name: "Phase 1: Warm Up"
+      duration: 15
+      arrivalRate: 5
+    - name: "Phase 2: Ramp Up"
+      duration: 20
+      arrivalRate: 5
+      rampTo: 25
+    - name: "Phase 3: Peak Load (50 Concurrent)"
+      duration: 60
+      arrivalRate: 25
+      maxVusers: 50
+  defaults:
+    headers:
+      Content-Type: "application/json"
+  variables:
+    doc_id: "DOC-EMP001-102"
+    auth_token: "{{ $processEnvironment.ID_TOKEN }}"
+
+scenarios:
+  - name: "Employee Document Listing & Download Flow"
+    weight: 70
+    flow:
+      - get:
+          url: "/files"
+          headers:
+            Authorization: "Bearer {{ auth_token }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+      - think: 1
+      - get:
+          url: "/download/{{ doc_id }}"
+          headers:
+            Authorization: "Bearer {{ auth_token }}"
+          expect:
+            - statusCode: 200
+            - contentType: json
+
+  - name: "Document Upload Request Initiation Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/upload"
+          headers:
+            Authorization: "Bearer {{ auth_token }}"
+          json:
+            filename: "load_test_compliance_doc.pdf"
+            document_type: "compliance"
+            tags: ["load-test", "automated"]
+          expect:
+            - statusCode: 200
+            - contentType: json

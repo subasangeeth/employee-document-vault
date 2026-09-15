@@ -1,0 +1,10 @@
+Service,Component,Pricing Unit,Small (10 Users/day),Medium (500 Users/day),Large (5000 Users/day)
+Amazon API Gateway,REST API Ingress,$3.50 per 1M requests,$0.01,$1.05,$15.75
+AWS Lambda,Compute & Invocations,$0.20/1M + $0.0000166667/GB-s,$0.00,$0.15,$2.32
+Amazon DynamoDB,On-Demand Reads/Writes & Storage,$1.25/1M WRU; $0.25/1M RRU,$0.01,$0.45,$6.75
+Amazon S3,Vault Storage & Operations,$0.023/GB; $0.005/1K PUT; $0.0004/1K GET,$0.03,$1.25,$12.50
+AWS KMS,Customer Managed Key & Crypto Ops,$1.00/key/mo + $0.03/10K requests,$1.00,$1.00,$1.45
+Amazon Cognito,User Directory & Authentication,Free tier (<50K MAUs),$0.00,$0.00,$0.00
+Amazon CloudWatch,Dashboard ($3) + Alarms ($0.20) + Logs ($0.50/GB),$3.00/dash + $0.10/alarm + ingestion,$3.30,$4.75,$25.95
+AWS Data Transfer,Internet Egress,First 100 GB/mo free; $0.09/GB above,$0.00,$0.00,$9.00
+TOTAL ESTIMATED MONTHLY COST (USD),,,$4.35,$8.65,$73.72

@@ -1,0 +1,78 @@
+graph TB
+    subgraph ClientZone ["Client Browser (Untrusted Zone)"]
+        User["User Persona<br/>(Employee / Manager / HR Admin)"]
+        SPA["S3-Hosted Frontend SPA<br/>(Vanilla JS / Tailwind)"]
+        User -->|1. Authenticates & Manages Files| SPA
+    end
+
+    subgraph AuthBoundary ["Authentication & Identity"]
+        Cognito["Amazon Cognito User Pool<br/>- Groups: Employee, Manager, HR_Admin<br/>- SRP / USER_PASSWORD_AUTH"]
+        SPA -->|2. Authenticate| Cognito
+        Cognito -->|3. Issues Signed JWT (ID/Access Token)| SPA
+    end
+
+    subgraph ApiBoundary ["API Gateway (Public Edge with TLS 1.3)"]
+        APIGW["Amazon API Gateway REST API<br/>- Cognito Authorizer<br/>- CORS Filter<br/>- Rate Limiting"]
+        SPA -->|4. Bearer JWT + REST Request| APIGW
+        Cognito -.->|Validates Token Keys| APIGW
+    end
+
+    subgraph ComputeZone ["Compute & Zero-Trust Enforcement"]
+        UploadFn["Upload Lambda<br/>(LambdaUploadRole)"]
+        DownloadFn["Download Lambda<br/>(LambdaDownloadRole)"]
+        ListFn["List Lambda<br/>(LambdaListRole)"]
+        DeleteFn["Delete Lambda<br/>(LambdaDeleteRole)"]
+        VersionFn["Version History Lambda<br/>(LambdaVersionRole)"]
+
+        APIGW -->|POST /upload| UploadFn
+        APIGW -->|GET /download/:id| DownloadFn
+        APIGW -->|GET /files| ListFn
+        APIGW -->|DELETE /files/:id| DeleteFn
+        APIGW -->|GET /files/:id/versions| VersionFn
+    end
+
+    subgraph StorageData ["Secure Storage & Database Layer"]
+        KMS["AWS KMS Key (CMK)<br/>alias/employee-document-vault-key"]
+
+        S3Vault["Amazon S3 Document Vault<br/>- S3 Versioning: Enabled<br/>- 90-Day Transition to S3-IA<br/>- BlockPublicAccess: 100%<br/>- HTTPS Enforcement Policy<br/>- SSE-KMS Encrypted"]
+
+        DDB_Meta["DynamoDB: document_metadata<br/>- GSI: EmployeeDocumentsIndex<br/>- Soft-Delete Flags<br/>- PITR Enabled"]
+
+        DDB_Dir["DynamoDB: employee_directory<br/>- GSI: ManagerIndex<br/>- Organizational Hierarchy"]
+
+        DDB_Audit["DynamoDB: audit_log (Immutable)<br/>- PutItem Only<br/>- PITR Enabled"]
+
+        KMS -.->|Encrypts/Decrypts| S3Vault
+        UploadFn -->|Generate 15m Pre-signed PUT| SPA
+        DownloadFn -->|Generate 15m Pre-signed GET| SPA
+        SPA ==>|Direct S3 PUT/GET via Pre-signed URL| S3Vault
+
+        UploadFn -->|Write Metadata| DDB_Meta
+        DownloadFn -->|Read Metadata| DDB_Meta
+        ListFn -->|Query GSI| DDB_Meta
+        DeleteFn -->|Update soft-delete: true| DDB_Meta
+        VersionFn -->|Read Metadata & Query S3 Versions| S3Vault
+
+        UploadFn & DownloadFn & ListFn & DeleteFn & VersionFn -->|Lookup Org Hierarchy| DDB_Dir
+        UploadFn & DownloadFn & ListFn & DeleteFn & VersionFn -->|Write Audit Event (PutItem)| DDB_Audit
+    end
+
+    subgraph Observability ["Observability & Governance"]
+        CW["Amazon CloudWatch Logs<br/>(Sanitized Request Logs)"]
+        CT["AWS CloudTrail<br/>(AWS Management & Data Audit)"]
+        
+        ComputeZone -.->|Operational Logging| CW
+        StorageData -.->|API Audit Trail| CT
+    end
+
+    classDef client fill:#1e293b,stroke:#38bdf8,stroke-width:2px,color:#fff;
+    classDef auth fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff;
+    classDef compute fill:#14532d,stroke:#4ade80,stroke-width:2px,color:#fff;
+    classDef storage fill:#3b0764,stroke:#c084fc,stroke-width:2px,color:#fff;
+    classDef sec fill:#450a0a,stroke:#f87171,stroke-width:2px,color:#fff;
+
+    class User,SPA client;
+    class Cognito,APIGW auth;
+    class UploadFn,DownloadFn,ListFn,DeleteFn,VersionFn compute;
+    class S3Vault,DDB_Meta,DDB_Dir,DDB_Audit,KMS storage;
+    class CW,CT sec;

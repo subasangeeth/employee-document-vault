@@ -1,0 +1,20 @@
+{
+  "AlarmName": "SecureEmployeeVault-HighP95Latency",
+  "AlarmDescription": "Triggered when API Gateway P95 end-to-end latency exceeds 3000ms over 5 minutes",
+  "ActionsEnabled": true,
+  "AlarmActions": [
+    "arn:aws:sns:us-east-2:210452150784:secure-employee-vault-alerts"
+  ],
+  "MetricName": "Latency",
+  "Namespace": "AWS/ApiGateway",
+  "Dimensions": [
+    { "Name": "ApiId", "Value": "gk6sav3uah" },
+    { "Name": "Stage", "Value": "prod" }
+  ],
+  "ExtendedStatistic": "p95",
+  "Period": 300,
+  "EvaluationPeriods": 1,
+  "Threshold": 3000.0,
+  "ComparisonOperator": "GreaterThanThreshold",
+  "TreatMissingData": "notBreaching"
+}

@@ -1,0 +1,17 @@
+{
+  "Rules": [
+    {
+      "ID": "ArchiveNonCurrentVersionsToIA",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "documents/"
+      },
+      "NoncurrentVersionTransitions": [
+        {
+          "NoncurrentDays": 90,
+          "StorageClass": "STANDARD_IA"
+        }
+      ]
+    }
+  ]
+}

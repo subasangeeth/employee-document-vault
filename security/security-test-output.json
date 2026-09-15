@@ -1,0 +1,95 @@
+[
+  {
+    "scenario": 1,
+    "name": "Cross-user isolation: Employee A accesses Employee B's document",
+    "expected": 403,
+    "got": 403,
+    "latency_ms": 1352.8327941894531,
+    "passed": true,
+    "details": {
+      "success": false,
+      "error": {
+        "code": "ACCESS_DENIED",
+        "message": "Employee EMP001 cannot access records belonging to employee EMP002"
+      }
+    }
+  },
+  {
+    "scenario": 2,
+    "name": "Manager boundary: Manager accesses non-reporting employee document",
+    "expected": 403,
+    "got": 403,
+    "latency_ms": 985.7532978057861,
+    "passed": true,
+    "details": {
+      "success": false,
+      "error": {
+        "code": "ACCESS_DENIED",
+        "message": "Manager MGR001 is not authorized to access documents for employee EMP999"
+      }
+    }
+  },
+  {
+    "scenario": 3,
+    "name": "Role boundary: Employee attempts to list documents of another employee",
+    "expected": 403,
+    "got": 403,
+    "latency_ms": 2503.124475479126,
+    "passed": true,
+    "details": {
+      "success": false,
+      "error": {
+        "code": "ACCESS_DENIED",
+        "message": "Employees may only list their own documents"
+      }
+    }
+  },
+  {
+    "scenario": 4,
+    "name": "Tampered JWT signature rejected at API Gateway authorizer layer",
+    "expected": "401/403",
+    "got": 403,
+    "latency_ms": 868.727445602417,
+    "passed": true,
+    "details": {
+      "Message": "Access Denied"
+    }
+  },
+  {
+    "scenario": 5,
+    "name": "Direct S3 access without pre-signed URL rejected by S3 bucket policy",
+    "expected": 403,
+    "got": 403,
+    "latency_ms": 1149.9075889587402,
+    "passed": true,
+    "details": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error><Code>AccessDenied</Code><Message>Access Denied</Message><RequestId>RAYPG0Q8NMY8VWCH</RequestId><HostId>/R4K0uNlWHd0ucDadi2cLwdFyEJ50Ap/wxMELWxxONMWbQTv4IE+uakiWj87PIjqff6syJiM4tSDGhOQd6p+q7zPJgn97dmi</HostId></Error>"
+  },
+  {
+    "scenario": 6,
+    "name": "Expired pre-signed URL rejected by Amazon S3 storage layer",
+    "expected": 403,
+    "got": 403,
+    "latency_ms": 892.2667503356934,
+    "passed": true,
+    "details": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error><Code>AccessDenied</Code><Message>Request has expired</Message><X-Amz-Expires>1</X-Amz-Expires><Expires>2026-09-15T12:17:45Z</Expires><ServerTime>2026-09-15T12:17:55Z</ServerTime><RequestId>50Q42QSTP49M4QGY</RequestId><HostId>HWNRRyQ1ddkrn5ehLJ+rx0FmaIj2TU2+rQAaPvMt8Xl0eGvCt+kRHkQb5vDVHzJ6xS6IXKd4Mt5kLRxKRCwAxuL7HkgxbXTn</HostId></Error>"
+  },
+  {
+    "scenario": 7,
+    "name": "Soft-deleted document inaccessible via API but physically retained in S3",
+    "expected": 404,
+    "got": 404,
+    "latency_ms": 1164.8874282836914,
+    "passed": true,
+    "details": {
+      "s3_physically_retained": true,
+      "s3_version_id": "IdNFB5ZoD3xZztzDdrx.yKb4lnIK_R5Q",
+      "api_response": {
+        "success": false,
+        "error": {
+          "code": "DOCUMENT_DELETED",
+          "message": "Document has been deleted"
+        }
+      }
+    }
+  }
+]

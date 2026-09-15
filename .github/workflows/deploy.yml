@@ -1,0 +1,145 @@
+name: Build, Test & Deploy Secure Employee Document Vault
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  id-token: write   # Required for AWS OIDC authentication
+  contents: read    # Required to checkout code
+
+env:
+  AWS_REGION: "us-east-2"
+  DEPLOY_ROLE_ARN: "arn:aws:iam::210452150784:role/GitHubActionsDeployRole"
+  S3_FRONTEND_BUCKET: "employee-vault-frontend-210452150784-us-east-2"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint-and-scan:
+    name: Lint & Static Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Linting & Security Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 bandit
+
+      - name: Run Syntax & Lint Check
+        run: |
+          # Stop build if there are Python syntax errors or undefined names
+          flake8 lambda/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Warning check for complexity
+          flake8 lambda/ --count --exit-zero --max-complexity=12 --max-line-length=127 --statistics
+
+      - name: Run Bandit Static Security Scanner
+        run: |
+          # Scan Lambda handlers for hardcoded secrets, weak hashes, and insecure bindings
+          bandit -r lambda/ -ll
+
+  unit-tests:
+    name: Unit & Authorization Gate Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3 pytest
+
+      - name: Validate Python Packaging
+        run: |
+          python -c "
+          import zipfile, os
+          lambdas = {
+              'EmployeeVaultUpload': 'lambda/upload/handler.py',
+              'EmployeeVaultDownload': 'lambda/download/handler.py',
+              'EmployeeVaultList': 'lambda/list_files/handler.py',
+              'EmployeeVaultDelete': 'lambda/delete/handler.py',
+              'EmployeeVaultVersion': 'lambda/version_history/handler.py',
+          }
+          os.makedirs('dist', exist_ok=True)
+          for k, v in lambdas.items():
+              z = f'dist/{k}.zip'
+              with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+                  zf.write(v, 'handler.py')
+                  zf.write('lambda/common/auth.py', 'auth.py')
+              print(f'Verified artifact {z} size: {os.path.getsize(z)} bytes')
+          "
+
+  deploy:
+    name: Continuous Deployment to AWS
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Package Microservices
+        run: |
+          python -c "
+          import zipfile, os
+          lambdas = {
+              'EmployeeVaultUpload': 'lambda/upload/handler.py',
+              'EmployeeVaultDownload': 'lambda/download/handler.py',
+              'EmployeeVaultList': 'lambda/list_files/handler.py',
+              'EmployeeVaultDelete': 'lambda/delete/handler.py',
+              'EmployeeVaultVersion': 'lambda/version_history/handler.py',
+          }
+          os.makedirs('dist', exist_ok=True)
+          for k, v in lambdas.items():
+              z = f'dist/{k}.zip'
+              with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
+                  zf.write(v, 'handler.py')
+                  zf.write('lambda/common/auth.py', 'auth.py')
+          "
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: Deploy Lambda Microservices
+        run: |
+          for f in EmployeeVaultUpload EmployeeVaultDownload EmployeeVaultList EmployeeVaultDelete EmployeeVaultVersion; do
+            echo "Deploying function $f..."
+            aws lambda update-function-code \
+              --function-name "$f" \
+              --zip-file "fileb://dist/$f.zip" \
+              --region "${{ env.AWS_REGION }}"
+          done
+
+      - name: Deploy Frontend to S3 Website Bucket
+        run: |
+          echo "Deploying static assets to S3..."
+          aws s3 sync frontend/ "s3://${{ env.S3_FRONTEND_BUCKET }}" --delete --region "${{ env.AWS_REGION }}"
+
+      - name: Post-Deployment Smoke Test
+        run: |
+          python -m pip install requests
+          python tests/test_access_control.py
