@@ -149,5 +149,5 @@ jobs:
 
       - name: Post-Deployment Smoke Test
         run: |
-          python -m pip install requests
+          python -m pip install requests boto3
           python tests/test_access_control.py
