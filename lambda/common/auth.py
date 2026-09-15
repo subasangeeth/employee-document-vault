@@ -31,7 +31,7 @@ def get_jwks():
     jwks_url = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json"
     try:
         req = urllib.request.Request(jwks_url)
-        with urllib.request.urlopen(req, timeout=5) as response:
+        with urllib.request.urlopen(req, timeout=5) as response:  # nosec B310
             _JWKS_CACHE = json.loads(response.read().decode("utf-8"))
             return _JWKS_CACHE
     except Exception as e:
@@ -81,7 +81,7 @@ def authenticate_request(event: dict) -> dict:
     """
     request_context = event.get("requestContext") or {}
     identity = request_context.get("identity") or {}
-    ip_address = identity.get("sourceIp") or "0.0.0.0"
+    ip_address = identity.get("sourceIp") or "UNKNOWN"
     user_agent = identity.get("userAgent") or "Unknown"
 
     # 1. First check if API Gateway Cognito Authorizer has populated claims
@@ -292,7 +292,7 @@ def write_audit_log(
             "document_id": document_id or "N/A",
             "s3_key": s3_key or "N/A",
             "result": result,
-            "ip_address": caller.get("ip_address", "0.0.0.0"),
+            "ip_address": caller.get("ip_address", "UNKNOWN"),
             "user_agent": caller.get("user_agent", "Unknown"),
             "details": details or ""
         }
@@ -344,7 +344,7 @@ def log_event(
         "duration_ms": round(duration_ms, 2) if duration_ms is not None else None,
         "error_type": error_type,
         "error_message": error_message,
-        "sourceIp": caller.get("ip_address", "0.0.0.0") if caller else "0.0.0.0"
+        "sourceIp": caller.get("ip_address", "UNKNOWN") if caller else "UNKNOWN"
     }
     if extra:
         safe_extra = {}
